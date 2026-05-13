@@ -1378,34 +1378,14 @@
             document.getElementById('gitHubSettingsModal').style.display = 'none';
         }
 
-function saveGitHubSettings() {
+        function saveGitHubSettings() {
+            const token = document.getElementById('githubTokenInput').value.trim();
+            const gistId = document.getElementById('githubGistIdInput').value.trim();
 
-    const token = document.getElementById('githubTokenInput').value.trim();
-    const gistId = document.getElementById('githubGistIdInput').value.trim();
-
-    if (!token) {
-
-        showAlert('Please enter your GitHub token.', 'error');
-        return;
-    }
-
-    setGitHubToken(token);
-    setGitHubGistId(gistId);
-
-    document.getElementById('githubTokenStatus').textContent =
-        'Settings saved on this browser.';
-
-    document.getElementById('githubTokenStatus').style.color =
-        '#2e7d32';
-
-    showAlert('GitHub settings saved successfully.', 'success');
-
-    // AUTO LOAD CLOUD DATA
-    if (gistId) {
-
-        loadFromGitHub();
-    }
-}
+            if (!token) {
+                showAlert('Please enter your GitHub token.', 'error');
+                return;
+            }
 
             setGitHubToken(token);
             setGitHubGistId(gistId);
@@ -1608,6 +1588,7 @@ function saveGitHubSettings() {
         
         function loginUser(user) {
             currentUser = user;
+            loadFromGitHub();
             localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
             document.getElementById('loginPage').style.display = 'none';
             document.getElementById('mainDashboard').style.display = 'block';
@@ -1615,91 +1596,14 @@ function saveGitHubSettings() {
             updateDashboard();
         }
         
-function checkLoggedInUser() {
-
-    const savedUser =
-        localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-
-    // TRY AUTO CLOUD LOAD
-    const token = getGitHubToken();
-    const gistId = getGitHubGistId();
-
-    if (token && gistId) {
-
-        fetch(`https://api.github.com/gists/${gistId}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/vnd.github+json'
+        function checkLoggedInUser() {
+            const savedUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+            if (savedUser) {
+                const user = JSON.parse(savedUser);
+                const validUser = allUsers.find(u => u.id === user.id && u.isActive === true);
+                if (validUser) loginUser(validUser);
             }
-        })
-        .then(response => response.json())
-        .then(result => {
-
-            if (result.files &&
-                result.files['bop-dashboard-data.json']) {
-
-                const file =
-                    result.files['bop-dashboard-data.json'];
-
-                if (file.content) {
-
-                    const importedData =
-                        JSON.parse(file.content);
-
-                    if (
-                        importedData.app &&
-                        importedData.app.includes(
-                            'BOP Performance Dashboard'
-                        )
-                    ) {
-
-                        applyImportedData(importedData);
-
-                        console.log(
-                            'Cloud data loaded successfully'
-                        );
-                    }
-                }
-            }
-
-            // LOGIN AFTER CLOUD LOAD
-            continueLogin(savedUser);
-
-        })
-        .catch(error => {
-
-            console.error(
-                'Auto cloud sync failed:',
-                error
-            );
-
-            continueLogin(savedUser);
-        });
-
-    } else {
-
-        continueLogin(savedUser);
-    }
-}
-
-function continueLogin(savedUser) {
-
-    if (savedUser) {
-
-        const user = JSON.parse(savedUser);
-
-        const validUser = allUsers.find(
-            u => u.id === user.id &&
-                 u.isActive === true
-        );
-
-        if (validUser) {
-
-            loginUser(validUser);
         }
-    }
-}
         
         function logout() {
             currentUser = null;
